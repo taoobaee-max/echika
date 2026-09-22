@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Roleplay World</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --accent-color: #7289da;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #444;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .user-settings {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="text"], select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .card-genre {
+            font-size: 0.85em;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background-color: #444;
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .fav-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: #fff;
+            font-size: 1.2em;
+            padding: 5px 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .fav-btn.active {
+            color: #ff4757;
+        }
+
+        /* Modal Profile Detail */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>AI Roleplay</h1>
+        <div class="user-settings">
+            <label for="username">Tên người dùng:</label>
+            <input type="text" id="username" placeholder="Nhập tên của bạn..." onchange="saveUserName()">
+            
+            <label for="bgColor">Màu nền:</label>
+            <input type="color" id="bgColor" value="#1a1a1a" onchange="changeBgColor(this.value)">
+        </div>
+    </header>
+
+    <div class="filter-section">
+        <label for="genreFilter">Lọc theo thể loại:</label>
+        <select id="genreFilter" onchange="filterCharacters()">
+            <option value="all">Tất cả</option>
+            <option value="tiên hiệp">Tiên Hiệp</option>
+            <option value="khoa học viễn tưởng">Khoa Học Viễn Tưởng</option>
+            <option value="trinh thám">Trinh Thám</option>
+            <option value="học đường">Học Đường</option>
+        </select>
+        <button onclick="toggleShowFavorites()" id="favToggleBtn" style="padding: 8px 12px; background:#444; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+            Xem Yêu Thích
+        </button>
+    </div>
+
+    <div class="character-grid" id="characterGrid"></div>
+
+    <!-- Modal xem chi tiết hồ sơ -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="modalName"></h2>
+            <p id="modalGenre" style="color: var(--accent-color); font-weight: bold;"></p>
+            <p id="modalDesc"></p>
+            <div><strong>Thẻ tag:</strong></div>
+            <div class="card-tags" id="modalTags" style="margin-bottom: 15px;"></div>
+            <button style="padding: 10px 15px; background: var(--accent-color); color: #fff; border: none; border-radius: 5px; cursor: pointer;" onclick="alert('Đang kết nối chat với nhân vật...')">Bắt đầu Chat</button>
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu danh sách nhân vật mẫu
+        const characters = [
+            {
+                id: 1,
+                name: "Tiêu Phong",
+                genre: "tiên hiệp",
+                image: "https://picsum.photos/id/1025/300/200",
+                desc: "Một kiếm sĩ lang thang tìm kiếm bí mật của cửu thiên đại lục.",
+                tags: ["Kiếm đạo", "Lạnh lùng", "Bá đạo"]
+            },
+            {
+                id: 2,
+                name: "AI-707",
+                genre: "khoa học viễn tưởng",
+                image: "https://picsum.photos/id/1060/300/200",
+                desc: "Robot có trí tuệ nhân tạo vượt trội đến từ năm 2150.",
+                tags: ["Cyborg", "Thông minh", "Tương lai"]
+            },
+            {
+                id: 3,
+                name: "Sherlock M.",
+                genre: "trinh thám",
+                image: "https://picsum.photos/id/1005/300/200",
+                desc: "Thám tư tư nhân chuyên phá giải các vụ án kì quái.",
+                tags: ["Suy luận", "Bí ẩn", "Quan sát"]
+            },
+            {
+                id: 4,
+                name: "Miya",
+                genre: "học đường",
+                image: "https://picsum.photos/id/338/300/200",
+                desc: "Lớp trưởng năng nổ luôn giúp đỡ bạn bè trong học tập.",
+                tags: ["Năng động", "Ngọt ngào", "Học giỏi"]
+            }
+        ];
+
+        let favorites = JSON.parse(localStorage.getItem('fav_characters')) || [];
+        let showOnlyFavs = false;
+
+        // Khởi tạo ứng dụng
+        window.onload = function() {
+            // Tải cài đặt người dùng từ localStorage
+            const savedName = localStorage.getItem('user_name');
+            if (savedName) document.getElementById('username').value = savedName;
+
+            const savedBg = localStorage.getItem('user_bg');
+            if (savedBg) {
+                document.getElementById('bgColor').value = savedBg;
+                changeBgColor(savedBg);
+            }
+
+            renderCharacters(characters);
+        };
+
+        function saveUserName() {
+            const name = document.getElementById('username').value;
+            localStorage.setItem('user_name', name);
+        }
+
+        function changeBgColor(color) {
+            document.body.style.backgroundColor = color;
+            localStorage.setItem('user_bg', color);
+        }
+
+        function renderCharacters(data) {
+            const grid = document.getElementById('characterGrid');
+            grid.innerHTML = '';
+
+            data.forEach(char => {
+                const isFav = favorites.includes(char.id);
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = (e) => {
+                    if(!e.target.classList.contains('fav-btn')) openModal(char);
+                };
+
+                card.innerHTML = `
+                    <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, ${char.id})">♥</button>
+                    <img src="${char.image}" alt="${char.name}">
+                    <div class="card-content">
+                        <div class="card-genre">${char.genre}</div>
+                        <div class="card-title">${char.name}</div>
+                        <p style="font-size:0.9em; color:#ccc;">${char.desc}</p>
+                        <div class="card-tags">
+                            ${char.tags.map(t => `<span class="tag">#${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCharacters() {
+            const selectedGenre = document.getElementById('genreFilter').value;
+            
+            let filtered = characters.filter(char => {
+                const matchGenre = selectedGenre === 'all' || char.genre === selectedGenre;
+                const matchFav = showOnlyFavs ? favorites.includes(char.id) : true;
+                return matchGenre && matchFav;
+            });
+
+            renderCharacters(filtered);
+        }
+
+        function toggleFavorite(event, id) {
+            event.stopPropagation();
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+            } else {
+                favorites.push(id);
+            }
+            localStorage.setItem('fav_characters', JSON.stringify(favorites));
+            filterCharacters();
+        }
+
+        function toggleShowFavorites() {
+            showOnlyFavs = !showOnlyFavs;
+            const btn = document.getElementById('favToggleBtn');
+            btn.innerText = showOnlyFavs ? "Hiện Tất Cả" : "Xem Yêu Thích";
+            btn.style.background = showOnlyFavs ? "var(--accent-color)" : "#444";
+            filterCharacters();
+        }
+
+        function openModal(char) {
+            const userName = localStorage.getItem('user_name') || "Người dùng";
+            document.getElementById('modalName').innerText = `${char.name} (Đang trò chuyện với: ${userName})`;
+            document.getElementById('modalGenre').innerText = `Thể loại: ${char.genre.toUpperCase()}`;
+            document.getElementById('modalDesc').innerText = char.desc;
+            
+            const tagsContainer = document.getElementById('modalTags');
+            tagsContainer.innerHTML = char.tags.map(t => `<span class="tag">#${t}</span>`).join('');
+
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
